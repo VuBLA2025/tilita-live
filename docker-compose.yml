@@ -9,6 +9,18 @@ services:
     volumes:
       - tilita-data:/app/data
     restart: unless-stopped
+    networks:
+      - dokploy-network
 
 volumes:
   tilita-data:
+
+networks:
+  dokploy-network:
+    external: true
+# VPS fix 2026-11-24: Docker tren host da het subnet cho network moi
+# ("all predefined address pools have been fully subnetted" - deploy 1+2
+# build xong roi chet o buoc tao network compose-reboot-..._default).
+# Dung chung network dokploy-network cua Traefik thay vi tao network rieng.
+# Neu network nay khong ton tai, deploy se bao "network declared as external,
+# but could not be found" - khi do can don network thua tren host.
