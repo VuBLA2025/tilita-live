@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    image: tilita-live:1.0.0
+    environment:
+      PORT: "4205"
+      TILITA_ALLOWED_HOSTS: "tilita.bla.io.vn:4205"
+      TILITA_DATA_DIR: /app/data
+    volumes:
+      - tilita-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  tilita-data:
