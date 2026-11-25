@@ -19,6 +19,13 @@ const engine = new LiveEngine(saved, () => {
   if (!broadcastTimer) broadcastTimer = setTimeout(() => { broadcastTimer = null; const event = `data: ${JSON.stringify(engine.publicState())}\n\n`; for (const { response } of clients.values()) response.write(event); }, 40);
 });
 const adapter = new TikTokAdapter(engine);
+// VPS adaptation: seed bundled default background music on first start.
+// If no track is saved yet and public/audio/default-bgm.mp3 exists in the
+// checkout, copy it into the music dir and select it (paused). On the live
+// server the track lives in the tilita-data volume instead (uploaded via
+// the studio); if the volume is ever wiped, re-upload the mp3 from
+// ~/workspace/tilita-deploy/public/audio/.
+if (!engine.music.track) { try { const seed = path.join(root, 'public', 'audio', 'default-bgm.mp3'); if (fs.existsSync(seed)) { const id = randomUUID(), file = `${id}.mp3`; fs.copyFileSync(seed, path.join(mediaDir, file)); const bytes = fs.statSync(path.join(mediaDir, file)).size; engine.setMusic({ id, file, name: 'Lofi Chill — danyvin (Pixabay)', bytes, mime: 'audio/mpeg', url: `/media/${file}` }); } } catch (error) { console.warn('Could not seed default music:', error.message); } }
 const dev = process.argv.includes('--dev'); const port = Number(process.env.PORT || 5178);
 const vite = dev ? await (await import('vite')).createServer({ root, server: { middlewareMode: true }, appType: 'spa' }) : null;
 const allowedHosts = new Set([`127.0.0.1:${port}`, `localhost:${port}`]);
@@ -28,6 +35,12 @@ for (const host of (process.env.TILITA_ALLOWED_HOSTS || '').split(',').map(host 
 // VPS adaptation: accept http OR https origins whose host is in allowedHosts.
 // Upstream only accepted exactly `http://<host>`, which fails behind an HTTPS reverse proxy.
 const originAllowed = origin => { try { const u = new URL(origin); return (u.protocol === 'http:' || u.protocol === 'https:') && allowedHosts.has(u.host); } catch { return false; } };
+// VPS adaptation: panel password. Set PANEL_KEY in Dokploy env (never in repo).
+// When set, every POST /api/* (control + music upload + simulate) requires
+// header x-panel-key. GETs (health/state/events/report/avatar/media) stay
+// public so the OBS overlay can read state without a key.
+const PANEL_KEY = process.env.PANEL_KEY || '';
+const panelKeyOk = request => !PANEL_KEY || request.headers['x-panel-key'] === PANEL_KEY;
 const send = (response, status, value) => { response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); response.end(JSON.stringify(value)); };
 const body = request => new Promise((resolve, reject) => {
   let text = ''; request.on('data', chunk => { text += chunk; if (text.length > 2 * 1024 * 1024) { reject(new Error('Request is too large')); request.destroy(); } });
@@ -73,6 +86,7 @@ const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
   try {
     if (url.pathname === '/api/health') return send(response, 200, { app: 'tilita-live-threejs-theanh', version: '0.4.0', pid: process.pid, workspace: root });
+    if (url.pathname === '/api/auth') return send(response, 200, { panelAuth: Boolean(PANEL_KEY) });
     if (url.pathname === '/api/state') return send(response, 200, engine.publicState());
     if (url.pathname === '/api/report') {
       const report = engine.reports.export(url.searchParams.get('session'));
@@ -103,6 +117,7 @@ const server = http.createServer(async (request, response) => {
       }); return;
     }
     if (url.pathname.startsWith('/api/')) {
+      if (!panelKeyOk(request)) return send(response, 403, { error: 'Sai mật khẩu panel.' });
       if(url.pathname==='/api/music/upload'){
         if(request.method!=='POST'||!originAllowed(request.headers.origin))return send(response,403,{error:'Upload music from the local studio only.'});
         await uploadMusic(request);return send(response,200,engine.publicState());

@@ -58,6 +58,7 @@ const messages = {
   'Avatar is too large.': 'Ảnh đại diện vượt quá kích thước cho phép.',
   'Upload music from the local studio only.': 'Hãy tải nhạc lên từ màn hình quản trị trên máy này.',
   'Control commands must come from the local studio.': 'Lệnh điều khiển phải được gửi từ màn hình quản trị trên máy này.',
+  'Sai mật khẩu panel.': 'Sai mật khẩu panel. Hãy tải lại trang và nhập lại mật khẩu.',
   'This server only accepts localhost requests.': 'Ứng dụng chỉ nhận yêu cầu từ chính máy đang chạy.',
   'Invalid request origin.': 'Nguồn gửi yêu cầu không hợp lệ.',
   'Invalid JSON': 'Dữ liệu gửi lên không đúng định dạng.',

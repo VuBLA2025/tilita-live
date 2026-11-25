@@ -6,7 +6,7 @@ export function mountMusicPanel({ api, toast, audio, refresh, unlock }) {
   async function upload(file){
     if(!file||uploading)return;if(file.size>50*1024*1024)return toast('Tệp nhạc phải nhỏ hơn 50 MB.');
     uploading=true;$('#music-name').textContent=`Đang tải ${file.name} lên…`;
-    try{const response=await fetch('/api/music/upload',{method:'POST',headers:{'Content-Type':file.type||'application/octet-stream','X-File-Name':encodeURIComponent(file.name)},body:file});const result=await response.json();if(!response.ok)throw new Error(result.error);toast('Đã tải nhạc lên. Bấm Phát nhạc để nghe.');}
+    try{const response=await fetch('/api/music/upload',{method:'POST',headers:{'Content-Type':file.type||'application/octet-stream','X-File-Name':encodeURIComponent(file.name),'X-Panel-Key':sessionStorage.getItem('tilita-panel-key')||''},body:file});const result=await response.json();if(!response.ok)throw new Error(result.error);toast('Đã tải nhạc lên. Bấm Phát nhạc để nghe.');}
     catch(error){toast(error.message);$('#music-name').textContent=state?.music?.track?.name||'Chưa chọn nhạc nền';}
     finally{uploading=false;$('#music-file').value='';}
   }
