@@ -6,6 +6,10 @@ services:
       PORT: "4205"
       TILITA_ALLOWED_HOSTS: "tilita.bla.io.vn,tilita.bla.io.vn:4205,tilita.bla.io.vn:443"
       TILITA_DATA_DIR: /app/data
+      PANEL_KEY: "${PANEL_KEY:-}"
+      # PANEL_KEY lay tu bien moi truong cua Dokploy (.env) - khong ghi gia tri
+      # that vao file nay. Neu Dokploy chua dat PANEL_KEY thi container chay
+      # khong mat khau (tuong thich nguoc cho chay local).
     volumes:
       - tilita-data:/app/data
     restart: unless-stopped
